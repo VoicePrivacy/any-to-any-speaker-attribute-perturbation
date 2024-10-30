@@ -1,0 +1,166 @@
+global_vector: false
+Adversary_Generator:
+  noise_frame: 100
+  stft_conf:
+    fft_len: 510
+    win_len: 25
+    len_hop: 10
+    sample_rate: 16000
+  MHA_conf:
+    n_feat: 256
+    n_att: 256
+    n_head: 4
+  dropout_rate: 0.1
+  encoder_layers: 6
+  decoder_layers: 1
+  multi_stage: 1
+  kmeans_selection: false
+  conformer: true
+feature_extraction_conf:
+  feature_type: 'fbank'
+  kaldi_featset:
+      num_mel_bins: 40
+      frame_shift: 10
+      frame_length: 25
+      low_freq: 40
+      high_freq: -200
+      energy_floor: 0.0
+      use_energy: false
+
+  mean_var_conf:
+      mean_norm: true
+      std_norm: false
+mfcc_extraction_conf:
+  feature_type: 'mfcc'
+  kaldi_featset:
+      num_mel_bins: 23
+      num_ceps: 23
+      frame_shift: 10
+      frame_length: 25
+      low_freq: 40
+      high_freq: -200
+      energy_floor: 0.0
+      use_energy: true
+
+  mean_var_conf:
+      mean_norm: true
+      std_norm: false
+Ecapa_tdnn:
+  inputs_dim: 40
+  aug_dropout: 0.0
+  tail_dropout: 0.0
+  training: true
+  extracted_embedding: near
+  ecapa_params:
+    channels: 1024
+    embd_dim: 192
+    mfa_conv: 1536
+    bn_params:
+      momentum: 0.5
+      affine: true
+      track_running_stats: true
+  pooling: ecpa-attentive
+  pooling_params:
+    hidden_size: 128
+    time_attention: true
+    stddev: true
+  fc1: false
+  fc1_params:
+    nonlinearity: relu
+    nonlinearity_params:
+      inplace: true
+    bn-relu: false
+    bn: true
+    bn_params:
+      momentum: 0.5
+      affine: false
+      track_running_stats: true
+  fc2_params:
+    nonlinearity: ''
+    nonlinearity_params:
+      inplace: true
+    bn-relu: false
+    bn: true
+    bn_params:
+      momentum: 0.5
+      affine: false
+      track_running_stats: true
+  margin_loss: true
+  margin_loss_params:
+    method: aam
+    m: 0.2
+    feature_normalize: true
+    s: 30
+    mhe_loss: false
+    mhe_w: 0.01
+  use_step: false
+  step_params:
+    margin_warm: false
+    margin_warm_conf:
+      start_epoch: 1
+      end_epoch: 1
+      offset_margin: -0.0
+      init_lambda: 1.0
+    T: null
+    m: true
+    lambda_0: 0
+    lambda_b: 1000
+    alpha: 5
+    gamma: 0.0001
+    # s: false
+    # s_tuple: !!python/tuple
+    #   - 30
+    #   - 12
+    # s_list: null
+    # t: false
+    # t_tuple: !!python/tuple
+    #   - 0.5
+    #   - 1.2
+    # p: false
+    # p_tuple: !!python/tuple
+    #   - 0.5
+    #   - 0.1
+feat_dim: 40 # the num_mel_bins of fbank and the num_ceps of mfcc
+data_type: 'shard'  # shard or raw
+# feature extraction
+dataset_conf:
+    # random_chunk
+    random_chunk: false
+    random_chunk_size: 8
+    cut_wav: true
+    max_wav_len: 8
+    # resample
+    resample: false
+    resample_conf: 
+        resample_rate: 16000
+    # waveform true config
+    speech_aug: false
+    speech_aug_conf: /train20/intern/permanent/shchen16/subtools/conf/speech_aug_random.yaml
+    csv_aug_folder: ''
+    # It seems exit some bug, DO NOT set dither and use_energy together.
+
+    # spec level config
+    spec_aug: false
+    spec_aug_conf:
+        aug: specaugment # None or specaugment
+        aug_params:
+            frequency: 0.2
+            frame: 0.2
+            rows: 4
+            cols: 4
+            random_rows: true
+            random_cols: true
+
+
+    shuffle: true
+    shuffle_conf:
+        shuffle_size: 3500
+    batch_conf:
+        batch_type: 'static' # static or dynamic
+        batch_size: 1024
+
+# attention: Do not specify batch size in dataloader.
+data_loader_conf:
+    num_workers: 1
+    pin_memory: false
+    prefetch_factor: 200 # pf(400) * bs(16) is about 2 shards which has 3
